@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_number }}{% endblock %}
+{% block page_title %}Invoice Detail{% endblock %}
+
+{% block content %}
+<div class="d-flex gap-2 mb-3 flex-wrap">
+  <a href="{{ url_for('invoices.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+  <a href="{{ url_for('invoices.download_pdf', id=invoice.id) }}" class="btn btn-danger btn-sm">
+    <i class="bi bi-filetype-pdf me-1"></i>Download PDF
+  </a>
+  {% if invoice.payment_status != 'paid' %}
+  <a href="{{ url_for('payments.record') }}?invoice_id={{ invoice.id }}" class="btn btn-success btn-sm">
+    <i class="bi bi-cash me-1"></i>Record Payment
+  </a>
+  {% endif %}
+  <a href="{{ url_for('invoices.edit', id=invoice.id) }}" class="btn btn-outline-primary btn-sm">
+    <i class="bi bi-pencil me-1"></i>Edit
+  </a>
+  <form method="POST" action="{{ url_for('invoices.delete', id=invoice.id) }}" class="d-inline"
+        onsubmit="return confirm('Delete this invoice? This cannot be undone.')">
+    <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Delete</button>
+  </form>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <!-- Invoice Preview Card -->
+    <div class="card" id="invoicePrint" style="max-width:720px;">
+      <!-- Invoice Header -->
+      <div style="background:linear-gradient(135deg,#1a56db,#0ea5e9);padding:28px 32px;border-radius:14px 14px 0 0;">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div>
+            <div style="font-size:26px;font-weight:900;color:white;letter-spacing:-0.5px;">💧 AquaFlow</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.7);margin-top:4px;">Water Supply Management</div>
+          </div>
+          <div class="text-end">
+            <div style="font-size:12px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.8px;">Tax Invoice</div>
+            <div style="font-size:22px;font-weight:800;color:#fbbf24;" class="mono">{{ invoice.invoice_number }}</div>
+            <div style="font-size:12px;color:rgba(255,255,255,0.8);">{{ invoice.invoice_date.strftime('%d %B %Y') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card-body" style="padding:28px 32px;">
+        <!-- Customer + Status -->
+        <div class="row mb-4">
+          <div class="col-7">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Bill To</div>
+            <div style="font-size:16px;font-weight:800;">{{ invoice.customer.company_name }}</div>
+            {% if invoice.customer.contact_person %}
+            <div style="font-size:13px;color:#64748b;">{{ invoice.customer.contact_person }}</div>
+            {% endif %}
+            {% if invoice.customer.address %}
+            <div style="font-size:12px;color:#94a3b8;margin-top:4px;">{{ invoice.customer.address }}</div>
+            {% endif %}
+            {% if invoice.customer.city %}
+            <div style="font-size:12px;color:#94a3b8;">{{ invoice.customer.city }}{% if invoice.customer.state %}, {{ invoice.customer.state }}{% endif %}</div>
+            {% endif %}
+            {% if invoice.customer.mobile %}
+            <div style="font-size:12px;color:#94a3b8;margin-top:4px;">📞 {{ invoice.customer.mobile }}</div>
+            {% endif %}
+            {% if invoice.customer.gst_number %}
+            <div style="font-size:11px;color:#94a3b8;" class="mono">GSTIN: {{ invoice.customer.gst_number }}</div>
+            {% endif %}
+          </div>
+          <div class="col-5 text-end">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Billing Period</div>
+            <div style="font-size:15px;font-weight:700;">
+              {{ ['January','February','March','April','May','June','July','August','September','October','November','December'][invoice.billing_month-1] }} {{ invoice.billing_year }}
+            </div>
+            <div style="margin-top:12px;">
+              <span class="badge-status badge-{{ invoice.payment_status }}" style="font-size:13px;padding:6px 14px;">
+                {{ invoice.payment_status.upper() }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Items -->
+        <table class="table mb-0" style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">
+          <thead style="background:#0f172a;">
+            <tr>
+              <th style="color:white;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;padding:12px 16px;">Description</th>
+              <th style="color:white;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;padding:12px 16px;text-align:center;">Qty</th>
+              <th style="color:white;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;padding:12px 16px;text-align:right;">Rate</th>
+              <th style="color:white;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;padding:12px 16px;text-align:right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:14px 16px;">
+                <div style="font-weight:600;">20-Liter Water Jar Supply</div>
+                <div style="font-size:12px;color:#64748b;">
+                  {{ ['January','February','March','April','May','June','July','August','September','October','November','December'][invoice.billing_month-1] }} {{ invoice.billing_year }}
+                </div>
+              </td>
+              <td style="text-align:center;padding:14px 16px;font-weight:700;font-size:16px;">{{ invoice.total_jars }}</td>
+              <td style="text-align:right;padding:14px 16px;" class="mono">₹{{ "%.2f"|format(invoice.rate_per_jar) }}</td>
+              <td style="text-align:right;padding:14px 16px;font-weight:700;" class="mono">₹{{ "%.2f"|format(invoice.subtotal) }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr style="background:#f8fafc;">
+              <td colspan="3" style="text-align:right;padding:10px 16px;color:#64748b;font-size:13px;">Subtotal</td>
+              <td style="text-align:right;padding:10px 16px;font-weight:600;" class="mono">₹{{ "%.2f"|format(invoice.subtotal) }}</td>
+            </tr>
+            {% if invoice.gst_percentage > 0 %}
+            <tr style="background:#f8fafc;">
+              <td colspan="3" style="text-align:right;padding:10px 16px;color:#64748b;font-size:13px;">GST ({{ invoice.gst_percentage }}%)</td>
+              <td style="text-align:right;padding:10px 16px;font-weight:600;" class="mono">₹{{ "%.2f"|format(invoice.gst_amount) }}</td>
+            </tr>
+            {% endif %}
+            <tr style="background:#0f172a;">
+              <td colspan="3" style="text-align:right;padding:12px 16px;color:white;font-weight:700;font-size:14px;">TOTAL</td>
+              <td style="text-align:right;padding:12px 16px;color:#fbbf24;font-weight:800;font-size:16px;" class="mono">₹{{ "%.2f"|format(invoice.total_amount) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- Balance -->
+        <div class="row mt-3 g-2">
+          <div class="col-md-4">
+            <div style="background:#f0fdf4;border-radius:10px;padding:14px 16px;text-align:center;">
+              <div style="font-size:11px;color:#059669;text-transform:uppercase;font-weight:700;">Paid</div>
+              <div style="font-size:20px;font-weight:800;color:#059669;" class="mono">₹{{ "%.2f"|format(invoice.paid_amount) }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div style="background:{{ '#f0fdf4' if invoice.balance_amount == 0 else '#fef2f2' }};border-radius:10px;padding:14px 16px;text-align:center;">
+              <div style="font-size:11px;color:{{ '#059669' if invoice.balance_amount == 0 else '#dc2626' }};text-transform:uppercase;font-weight:700;">Balance Due</div>
+              <div style="font-size:20px;font-weight:800;color:{{ '#059669' if invoice.balance_amount == 0 else '#dc2626' }};" class="mono">₹{{ "%.2f"|format(invoice.balance_amount) }}</div>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div style="background:#f0f9ff;border-radius:10px;padding:14px 16px;text-align:center;">
+              <div style="font-size:11px;color:#0369a1;text-transform:uppercase;font-weight:700;">Status</div>
+              <div style="font-size:16px;font-weight:800;color:#0369a1;">{{ invoice.payment_status.upper() }}</div>
+            </div>
+          </div>
+        </div>
+
+        {% if invoice.notes %}
+        <div class="mt-3 p-3" style="background:#f8fafc;border-radius:8px;font-size:13px;color:#64748b;">
+          <strong>Notes:</strong> {{ invoice.notes }}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment History Sidebar -->
+  <div class="col-12 col-lg-4">
+    <div class="card">
+      <div class="card-header">
+        <span><i class="bi bi-cash-stack me-2 text-brand"></i>Payments</span>
+        {% if invoice.payment_status != 'paid' %}
+        <a href="{{ url_for('payments.record') }}?invoice_id={{ invoice.id }}" class="btn btn-success btn-sm">
+          <i class="bi bi-plus me-1"></i>Add
+        </a>
+        {% endif %}
+      </div>
+      {% for p in payments %}
+      <div style="padding:12px 18px;border-bottom:1px solid var(--border);">
+        <div class="d-flex justify-content-between align-items-start">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:#059669;">₹{{ "%.2f"|format(p.amount) }}</div>
+            <div style="font-size:11px;color:#94a3b8;">{{ p.payment_date.strftime('%d %b %Y') }}</div>
+            <span class="badge bg-light text-dark" style="font-size:10px;">{{ p.payment_method }}</span>
+            {% if p.reference_number %}
+            <div style="font-size:11px;color:#64748b;" class="mono">{{ p.reference_number }}</div>
+            {% endif %}
+          </div>
+          <form method="POST" action="{{ url_for('payments.delete', id=p.id) }}" 
+                onsubmit="return confirm('Delete this payment?')">
+            <button class="btn btn-icon btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          </form>
+        </div>
+      </div>
+      {% else %}
+      <div class="card-body text-center text-muted" style="font-size:13px;">
+        No payments recorded.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

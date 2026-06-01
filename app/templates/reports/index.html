@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}Reports{% endblock %}
+{% block page_title %}📊 Reports{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('reports.jar_status') }}" class="text-decoration-none">
+      <div class="card h-100 p-4 text-center" style="border:2px solid #e2e8f0; transition:all .2s" onmouseover="this.style.borderColor='#1a56db'" onmouseout="this.style.borderColor='#e2e8f0'">
+        <div style="font-size:2.5rem">💧</div>
+        <h5 class="fw-bold mt-2 mb-1">Jar Status</h5>
+        <p class="text-muted small mb-0">Customer-wise pending jar balance. Identify customers with too many jars.</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('reports.outstanding') }}" class="text-decoration-none">
+      <div class="card h-100 p-4 text-center" style="border:2px solid #e2e8f0; transition:all .2s" onmouseover="this.style.borderColor='#e02424'" onmouseout="this.style.borderColor='#e2e8f0'">
+        <div style="font-size:2.5rem">⚠️</div>
+        <h5 class="fw-bold mt-2 mb-1">Outstanding Dues</h5>
+        <p class="text-muted small mb-0">All unpaid and partially paid invoices with total balance.</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('reports.monthly_summary') }}" class="text-decoration-none">
+      <div class="card h-100 p-4 text-center" style="border:2px solid #e2e8f0; transition:all .2s" onmouseover="this.style.borderColor='#0891b2'" onmouseout="this.style.borderColor='#e2e8f0'">
+        <div style="font-size:2.5rem">📅</div>
+        <h5 class="fw-bold mt-2 mb-1">Monthly Summary</h5>
+        <p class="text-muted small mb-0">Deliveries and billing summary for any month.</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a href="{{ url_for('reports.collections') }}" class="text-decoration-none">
+      <div class="card h-100 p-4 text-center" style="border:2px solid #e2e8f0; transition:all .2s" onmouseover="this.style.borderColor='#0e9f6e'" onmouseout="this.style.borderColor='#e2e8f0'">
+        <div style="font-size:2.5rem">💰</div>
+        <h5 class="fw-bold mt-2 mb-1">Collections</h5>
+        <p class="text-muted small mb-0">Monthly payment collections by method and date.</p>
+      </div>
+    </a>
+  </div>
+</div>
+{% endblock %}

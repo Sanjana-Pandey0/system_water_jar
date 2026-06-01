@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Invoices{% endblock %}
+{% block page_title %}🧾 Invoices{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+  <form class="d-flex flex-wrap gap-2 align-items-center">
+    <select name="month" class="form-select form-select-sm" style="width:130px" onchange="this.form.submit()">
+      {% for m, mname in months %}
+      <option value="{{ m }}" {{ 'selected' if m==month }}>{{ mname }}</option>
+      {% endfor %}
+    </select>
+    <select name="year" class="form-select form-select-sm" style="width:90px" onchange="this.form.submit()">
+      {% for y in years %}
+      <option value="{{ y }}" {{ 'selected' if y==year }}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="form-select form-select-sm" style="width:120px" onchange="this.form.submit()">
+      <option value="" {{ 'selected' if not status }}>All Status</option>
+      <option value="unpaid" {{ 'selected' if status=='unpaid' }}>Unpaid</option>
+      <option value="partial" {{ 'selected' if status=='partial' }}>Partial</option>
+      <option value="paid" {{ 'selected' if status=='paid' }}>Paid</option>
+    </select>
+  </form>
+  <a href="{{ url_for('billing.generate') }}" class="btn btn-sm btn-primary"><i class="bi bi-file-earmark-plus me-1"></i>Generate Invoices</a>
+</div>
+<div class="row g-2 mb-3">
+  <div class="col-4"><div class="kpi-card kpi-blue"><div class="kpi-val">₹{{ "%.0f"|format(total_invoiced) }}</div><div class="kpi-label">Total Invoiced</div></div></div>
+  <div class="col-4"><div class="kpi-card kpi-green"><div class="kpi-val">₹{{ "%.0f"|format(total_paid) }}</div><div class="kpi-label">Collected</div></div></div>
+  <div class="col-4"><div class="kpi-card kpi-red"><div class="kpi-val">₹{{ "%.0f"|format(total_due) }}</div><div class="kpi-label">Balance Due</div></div></div>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    {% if invoices %}
+    <table class="table table-clean mb-0">
+      <thead><tr><th>Invoice No</th><th>Customer</th><th>Date</th><th class="text-center">Jars</th><th class="text-end">Total</th><th class="text-end">Paid</th><th class="text-end">Balance</th><th class="text-center">Status</th><th></th></tr></thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td><a href="{{ url_for('billing.view', id=inv.id) }}" class="text-decoration-none fw-semibold">{{ inv.invoice_number }}</a></td>
+          <td class="small">{{ inv.customer.company_name }}</td>
+          <td class="small text-muted">{{ inv.invoice_date.strftime('%d %b %Y') }}</td>
+          <td class="text-center">{{ inv.total_jars }}</td>
+          <td class="text-end">₹{{ "%.2f"|format(inv.grand_total) }}</td>
+          <td class="text-end text-success">₹{{ "%.2f"|format(inv.paid_amount) }}</td>
+          <td class="text-end {{ 'text-danger fw-semibold' if inv.balance_due > 0 }}">₹{{ "%.2f"|format(inv.balance_due) }}</td>
+          <td class="text-center"><span class="badge badge-{{ inv.status }}">{{ inv.status.title() }}</span></td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('billing.view', id=inv.id) }}" class="btn btn-sm btn-outline-primary py-0 px-2"><i class="bi bi-eye"></i></a>
+              <a href="{{ url_for('billing.pdf', id=inv.id) }}" target="_blank" class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-file-pdf"></i></a>
+              <a href="{{ url_for('payments.add', invoice_id=inv.id) }}" class="btn btn-sm btn-outline-success py-0 px-2" title="Record Payment"><i class="bi bi-cash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="p-5 text-center text-muted">
+      <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+      No invoices for this period. <a href="{{ url_for('billing.generate') }}">Generate now</a>.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

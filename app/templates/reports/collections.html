@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% block title %}Collections{% endblock %}
+{% block page_title %}💰 Collections Report{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+  <form class="d-flex gap-2 align-items-center">
+    <select name="month" class="form-select form-select-sm" style="width:130px" onchange="this.form.submit()">
+      {% for m, mname in months %}<option value="{{ m }}" {{ 'selected' if m==month }}>{{ mname }}</option>{% endfor %}
+    </select>
+    <select name="year" class="form-select form-select-sm" style="width:90px" onchange="this.form.submit()">
+      {% for y in years %}<option value="{{ y }}" {{ 'selected' if y==year }}>{{ y }}</option>{% endfor %}
+    </select>
+  </form>
+</div>
+<div class="row g-3 mb-3">
+  <div class="col-md-4">
+    <div class="kpi-card kpi-green"><div class="kpi-val">₹{{ "%.0f"|format(total) }}</div><div class="kpi-label">Total Collected — {{ month_name }} {{ year }}</div></div>
+  </div>
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header py-2 small fw-semibold">By Payment Method</div>
+      <div class="card-body py-2">
+        <div class="d-flex flex-wrap gap-3">
+          {% for method, amt in by_method.items() %}
+          <div class="text-center px-3">
+            <div class="fw-bold fs-5">₹{{ "%.0f"|format(amt) }}</div>
+            <div class="text-muted small text-capitalize">{{ method }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-body p-0">
+    {% if payments %}
+    <table class="table table-clean mb-0">
+      <thead><tr><th>Date</th><th>Customer</th><th>Invoice</th><th class="text-end">Amount</th><th>Method</th><th>Reference</th><th>Notes</th></tr></thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td class="small">{{ p.payment_date.strftime('%d %b %Y') }}</td>
+          <td><a href="{{ url_for('customers.view', id=p.customer_id) }}" class="text-decoration-none small">{{ p.customer.company_name }}</a></td>
+          <td><a href="{{ url_for('billing.view', id=p.invoice_id) }}" class="text-decoration-none small">{{ p.invoice.invoice_number }}</a></td>
+          <td class="text-end fw-semibold text-success">₹{{ "%.2f"|format(p.amount) }}</td>
+          <td class="small text-muted text-capitalize">{{ p.method }}</td>
+          <td class="small text-muted">{{ p.reference or '—' }}</td>
+          <td class="small text-muted">{{ p.notes or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="background:#f8fafc; font-weight:700">
+          <td colspan="3" class="text-end text-muted">TOTAL</td>
+          <td class="text-end">₹{{ "%.2f"|format(total) }}</td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+    </table>
+    {% else %}
+    <div class="p-5 text-center text-muted"><i class="bi bi-cash-coin fs-1 d-block mb-2"></i>No payments received in {{ month_name }} {{ year }}.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

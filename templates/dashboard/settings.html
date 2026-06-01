@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Settings{% endblock %}
+{% block page_title %}Business Settings{% endblock %}
+
+{% block content %}
+<div style="max-width:700px;">
+  <div class="card">
+    <div class="card-header">
+      <span><i class="bi bi-building me-2 text-brand"></i>Business Information</span>
+    </div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="form-section">
+          <div class="form-section-title">Company Details</div>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Business Name</label>
+              <input type="text" name="business_name" class="form-control" value="{{ settings.business_name }}" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label">Address</label>
+              <input type="text" name="business_address" class="form-control" value="{{ settings.business_address }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">City</label>
+              <input type="text" name="business_city" class="form-control" value="{{ settings.business_city }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">State</label>
+              <input type="text" name="business_state" class="form-control" value="{{ settings.business_state }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">PIN Code</label>
+              <input type="text" name="business_pin" class="form-control" value="{{ settings.business_pin }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Mobile</label>
+              <input type="text" name="business_mobile" class="form-control" value="{{ settings.business_mobile }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" name="business_email" class="form-control" value="{{ settings.business_email }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label">GST Number</label>
+              <input type="text" name="business_gst" class="form-control" value="{{ settings.business_gst }}">
+            </div>
+          </div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Billing Defaults</div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">Default Jar Rate (₹)</label>
+              <input type="number" name="default_jar_rate" class="form-control" step="0.01" value="{{ settings.default_jar_rate }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">GST Rate (%)</label>
+              <input type="number" name="gst_rate" class="form-control" step="0.01" value="{{ settings.gst_rate }}">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">Pending Jar Warning</label>
+              <input type="number" name="pending_jar_warning" class="form-control" value="{{ settings.pending_jar_warning }}">
+              <div class="form-text">Warn when customer has this many+ pending jars</div>
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i> Save Settings
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

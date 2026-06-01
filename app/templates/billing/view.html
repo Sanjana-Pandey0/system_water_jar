@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}{{ inv.invoice_number }}{% endblock %}
+{% block page_title %}🧾 {{ inv.invoice_number }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 mb-3">
+  <a href="{{ url_for('billing.index') }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-left me-1"></i>Back</a>
+  <a href="{{ url_for('billing.pdf', id=inv.id) }}" target="_blank" class="btn btn-sm btn-outline-danger"><i class="bi bi-file-pdf me-1"></i>View PDF</a>
+  <a href="{{ url_for('billing.pdf', id=inv.id) }}?download=1" class="btn btn-sm btn-danger"><i class="bi bi-download me-1"></i>Download PDF</a>
+  {% if inv.status != 'paid' %}
+  <a href="{{ url_for('payments.add', invoice_id=inv.id) }}" class="btn btn-sm btn-success"><i class="bi bi-cash me-1"></i>Record Payment</a>
+  {% endif %}
+  <a href="{{ url_for('billing.edit', id=inv.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil me-1"></i>Edit</a>
+  {% if inv.paid_amount == 0 %}
+  <form method="POST" action="{{ url_for('billing.delete', id=inv.id) }}" onsubmit="return confirm('Delete this invoice?')" class="d-inline">
+    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Delete</button>
+  </form>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <!-- Invoice Preview Card -->
+    <div class="card" style="border: 2px solid #e2e8f0">
+      <div class="card-body p-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-start mb-3">
+          <div>
+            <h4 class="fw-bold text-primary mb-0">{{ biz.name }}</h4>
+            <small class="text-muted">{{ biz.address }}, {{ biz.city }} — {{ biz.pin }}<br>{{ biz.mobile }} | {{ biz.email }}</small>
+            {% if biz.gst %}<small class="text-muted d-block">GST: {{ biz.gst }}</small>{% endif %}
+          </div>
+          <div class="text-end">
+            <h5 class="fw-bold text-dark mb-0">INVOICE</h5>
+            <div class="text-muted small">{{ inv.invoice_number }}</div>
+            <span class="badge badge-{{ inv.status }} mt-1 px-3 py-1">{{ inv.status.upper() }}</span>
+          </div>
+        </div>
+        <hr>
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <div class="bg-light rounded p-3">
+              <div class="small fw-semibold text-muted mb-1">BILL TO</div>
+              <b>{{ inv.customer.company_name }}</b><br>
+              <small>{{ inv.customer.contact_person }}</small><br>
+              <small>{{ inv.customer.mobile }}</small>
+              {% if inv.customer.address %}<br><small class="text-muted">{{ inv.customer.address }}, {{ inv.customer.city }}</small>{% endif %}
+              {% if inv.customer.gst_number %}<br><small class="text-muted">GST: {{ inv.customer.gst_number }}</small>{% endif %}
+            </div>
+          </div>
+          <div class="col-md-6 text-end">
+            <table class="table table-sm ms-auto" style="max-width:280px">
+              <tr><td class="text-muted small">Invoice Date</td><td><b>{{ inv.invoice_date.strftime('%d %b %Y') }}</b></td></tr>
+              <tr><td class="text-muted small">Billing Period</td><td><b>{{ inv.billing_month_name }} {{ inv.billing_year }}</b></td></tr>
+            </table>
+          </div>
+        </div>
+        <!-- Delivery Table -->
+        {% if deliveries %}
+        <h6 class="fw-bold mb-2">Delivery Details</h6>
+        <table class="table table-clean mb-3">
+          <thead><tr><th>Date</th><th class="text-center">Delivered</th><th class="text-center">Returned</th><th>Staff</th></tr></thead>
+          <tbody>
+            {% for d in deliveries %}
+            <tr>
+              <td class="small">{{ d.delivery_date.strftime('%d %b') }}</td>
+              <td class="text-center">{{ d.jars_delivered }}</td>
+              <td class="text-center">{{ d.jars_returned }}</td>
+              <td class="small text-muted">{{ d.delivery_staff or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% endif %}
+        <!-- Totals -->
+        <div class="d-flex justify-content-end">
+          <table style="min-width:280px" class="table table-sm">
+            <tr><td class="text-muted">Total Jars Delivered</td><td class="text-end fw-semibold">{{ inv.total_jars }}</td></tr>
+            <tr><td class="text-muted">Rate per Jar</td><td class="text-end">₹ {{ inv.rate_per_jar }}</td></tr>
+            <tr><td class="text-muted">Subtotal</td><td class="text-end">₹ {{ "%.2f"|format(inv.subtotal) }}</td></tr>
+            {% if inv.gst_percent > 0 %}
+            <tr><td class="text-muted">GST @ {{ inv.gst_percent }}%</td><td class="text-end">₹ {{ "%.2f"|format(inv.gst_amount) }}</td></tr>
+            {% endif %}
+            <tr style="background:#1e2939; color:#fff"><td><b>GRAND TOTAL</b></td><td class="text-end"><b>₹ {{ "%.2f"|format(inv.grand_total) }}</b></td></tr>
+            <tr><td class="text-muted">Amount Paid</td><td class="text-end text-success">₹ {{ "%.2f"|format(inv.paid_amount) }}</td></tr>
+            <tr><td class="fw-semibold {{ 'text-danger' if inv.balance_due > 0 }}">Balance Due</td><td class="text-end fw-bold {{ 'text-danger' if inv.balance_due > 0 }}">₹ {{ "%.2f"|format(inv.balance_due) }}</td></tr>
+          </table>
+        </div>
+        {% if inv.notes %}<div class="alert alert-light py-2 small mt-2"><b>Notes:</b> {{ inv.notes }}</div>{% endif %}
+      </div>
+    </div>
+  </div>
+  <!-- Payments Panel -->
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header py-3">💳 Payments</div>
+      <div class="card-body p-0">
+        {% set payments = inv.payments.all() %}
+        {% if payments %}
+        <table class="table table-clean mb-0">
+          <thead><tr><th>Date</th><th class="text-end">Amount</th><th>Method</th><th></th></tr></thead>
+          <tbody>
+            {% for p in payments %}
+            <tr>
+              <td class="small">{{ p.payment_date.strftime('%d %b %Y') }}</td>
+              <td class="text-end text-success fw-semibold">₹{{ "%.2f"|format(p.amount) }}</td>
+              <td class="small text-muted text-capitalize">{{ p.method }}</td>
+              <td>
+                <form method="POST" action="{{ url_for('payments.delete', id=p.id) }}" onsubmit="return confirm('Delete?')">
+                  <button class="btn btn-sm py-0 btn-outline-danger px-1"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-center text-muted small">No payments recorded.</div>
+        {% endif %}
+      </div>
+      {% if inv.status != 'paid' %}
+      <div class="card-footer">
+        <a href="{{ url_for('payments.add', invoice_id=inv.id) }}" class="btn btn-success w-100 btn-sm">
+          <i class="bi bi-plus-circle me-1"></i>Add Payment
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}📊 Dashboard{% endblock %}
+
+{% block content %}
+<!-- KPI Row -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="kpi-card kpi-blue">
+      <div class="kpi-val">{{ total_customers }}</div>
+      <div class="kpi-label">Active Customers</div>
+      <i class="bi bi-people kpi-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="kpi-card kpi-teal">
+      <div class="kpi-val">{{ today_jars_out }}</div>
+      <div class="kpi-label">Jars Out Today</div>
+      <i class="bi bi-truck kpi-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="kpi-card kpi-green">
+      <div class="kpi-val">{{ today_jars_in }}</div>
+      <div class="kpi-label">Jars In Today</div>
+      <i class="bi bi-arrow-return-left kpi-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="kpi-card kpi-orange">
+      <div class="kpi-val">{{ total_jars_market }}</div>
+      <div class="kpi-label">Jars in Market</div>
+      <i class="bi bi-droplet-half kpi-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="kpi-card kpi-red">
+      <div class="kpi-val">₹{{ "%.0f"|format(unpaid_amount) }}</div>
+      <div class="kpi-label">Outstanding</div>
+      <i class="bi bi-exclamation-circle kpi-icon"></i>
+    </div>
+  </div>
+  <div class="col-6 col-md-4 col-lg-2">
+    <div class="kpi-card kpi-purple">
+      <div class="kpi-val">₹{{ "%.0f"|format(month_collected) }}</div>
+      <div class="kpi-label">This Month Collected</div>
+      <i class="bi bi-cash-coin kpi-icon"></i>
+    </div>
+  </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+  <div class="col-lg-7">
+    <div class="card h-100">
+      <div class="card-header py-3 d-flex align-items-center justify-content-between">
+        <span>📦 Daily Jar Movement (Last 7 Days)</span>
+        <a href="{{ url_for('deliveries.index') }}" class="btn btn-sm btn-outline-primary">View All</a>
+      </div>
+      <div class="card-body"><canvas id="deliveryChart" height="100"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card h-100">
+      <div class="card-header py-3">📈 Monthly Revenue (Last 6 Months)</div>
+      <div class="card-body"><canvas id="revenueChart" height="130"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tables Row -->
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header py-3 d-flex align-items-center justify-content-between">
+        <span>⚠️ High Pending Jars</span>
+        <a href="{{ url_for('reports.jar_status') }}" class="btn btn-sm btn-outline-warning">Full Report</a>
+      </div>
+      <div class="card-body p-0">
+        {% if warning_customers %}
+        <table class="table table-clean mb-0">
+          <thead><tr><th>Customer</th><th class="text-end">Pending Jars</th><th></th></tr></thead>
+          <tbody>
+            {% for w in warning_customers %}
+            <tr>
+              <td><a href="{{ url_for('customers.view', id=w.customer.id) }}" class="text-decoration-none fw-semibold">{{ w.customer.company_name }}</a><br><small class="text-muted">{{ w.customer.city }}</small></td>
+              <td class="text-end"><span class="badge badge-unpaid px-2 py-1 rounded-pill">{{ w.balance }} jars</span></td>
+              <td><a href="{{ url_for('deliveries.add') }}?customer={{ w.customer.id }}" class="btn btn-xs btn-sm btn-outline-primary py-0 px-2">+ Delivery</a></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="p-4 text-center text-muted"><i class="bi bi-check-circle text-success fs-3"></i><br>No high pending jar warnings</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header py-3 d-flex align-items-center justify-content-between">
+        <span>🧾 Unpaid Invoices</span>
+        <a href="{{ url_for('reports.outstanding') }}" class="btn btn-sm btn-outline-danger">View All</a>
+      </div>
+      <div class="card-body p-0">
+        {% if unpaid_invoices %}
+        <table class="table table-clean mb-0">
+          <thead><tr><th>Invoice</th><th>Customer</th><th class="text-end">Due</th></tr></thead>
+          <tbody>
+            {% for inv in unpaid_invoices %}
+            <tr>
+              <td><a href="{{ url_for('billing.view', id=inv.id) }}" class="text-decoration-none fw-semibold">{{ inv.invoice_number }}</a><br><small class="text-muted">{{ inv.billing_month_name }} {{ inv.billing_year }}</small></td>
+              <td class="text-truncate" style="max-width:140px">{{ inv.customer.company_name }}</td>
+              <td class="text-end"><span class="badge badge-{{ inv.status }} px-2 py-1">₹{{ "%.0f"|format(inv.balance_due) }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="p-4 text-center text-muted"><i class="bi bi-check-circle text-success fs-3"></i><br>No outstanding invoices</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-3 mt-1">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body py-3">
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+          <span class="text-muted small fw-semibold me-2">Quick Actions:</span>
+          <a href="{{ url_for('deliveries.add') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-circle me-1"></i>Add Delivery</a>
+          <a href="{{ url_for('deliveries.bulk') }}" class="btn btn-outline-primary btn-sm"><i class="bi bi-grid me-1"></i>Bulk Entry</a>
+          <a href="{{ url_for('customers.add') }}" class="btn btn-outline-success btn-sm"><i class="bi bi-person-plus me-1"></i>Add Customer</a>
+          <a href="{{ url_for('billing.generate') }}" class="btn btn-outline-warning btn-sm"><i class="bi bi-file-earmark-plus me-1"></i>Generate Bills</a>
+          <a href="{{ url_for('reports.jar_status') }}" class="btn btn-outline-info btn-sm"><i class="bi bi-droplet me-1"></i>Jar Report</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const dlabels = {{ chart_labels | tojson }};
+const dDelivered = {{ chart_delivered | tojson }};
+const dReturned = {{ chart_returned | tojson }};
+new Chart(document.getElementById('deliveryChart'), {
+  type: 'bar',
+  data: {
+    labels: dlabels,
+    datasets: [
+      {label:'Delivered', data:dDelivered, backgroundColor:'rgba(26,86,219,.8)', borderRadius:4},
+      {label:'Returned', data:dReturned, backgroundColor:'rgba(14,159,110,.7)', borderRadius:4},
+    ]
+  },
+  options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+});
+
+const rlabels = {{ rev_labels | tojson }};
+const rData = {{ rev_data | tojson }};
+new Chart(document.getElementById('revenueChart'), {
+  type:'line',
+  data:{
+    labels:rlabels,
+    datasets:[{label:'Revenue (₹)',data:rData,fill:true,
+      backgroundColor:'rgba(26,86,219,.1)',borderColor:'#1a56db',
+      borderWidth:2,pointBackgroundColor:'#1a56db',tension:0.4}]
+  },
+  options:{responsive:true,plugins:{legend:{position:'bottom'}},scales:{y:{beginAtZero:true,grid:{color:'#f1f5f9'}}}}
+});
+</script>
+{% endblock %}

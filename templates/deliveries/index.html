@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Deliveries{% endblock %}
+{% block page_title %}Daily Deliveries{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+  <form class="d-flex gap-2 flex-wrap" id="filterForm">
+    <input type="date" name="date" class="form-control" value="{{ selected_date.isoformat() }}"
+           style="width:auto;" onchange="this.form.submit()">
+    <select name="customer_id" class="form-select" style="width:auto;" onchange="this.form.submit()">
+      <option value="">All Customers</option>
+      {% for c in customers %}
+      <option value="{{ c.id }}" {{ 'selected' if customer_id == c.id|string }}>{{ c.company_name }}</option>
+      {% endfor %}
+    </select>
+    <div class="d-flex gap-1">
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="changeDate(-1)">
+        <i class="bi bi-chevron-left"></i>
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="changeDate(1)">
+        <i class="bi bi-chevron-right"></i>
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm" onclick="goToday()">Today</button>
+    </div>
+  </form>
+  <div class="ms-auto d-flex gap-2">
+    <a href="{{ url_for('deliveries.export_csv') }}?start={{ selected_date }}&end={{ selected_date }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-download me-1"></i>Export
+    </a>
+    <a href="{{ url_for('deliveries.bulk_entry') }}?date={{ selected_date }}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-list-check me-1"></i>Bulk Entry
+    </a>
+    <a href="{{ url_for('deliveries.add') }}?date={{ selected_date }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>Add Delivery
+    </a>
+  </div>
+</div>
+
+<!-- Day Summary -->
+{% if daily_stats %}
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="stat-value text-brand">{{ daily_stats.delivered or 0 }}</div>
+      <div class="stat-label">Jars Delivered</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="stat-value" style="color:#059669;">{{ daily_stats.returned or 0 }}</div>
+      <div class="stat-label">Jars Returned</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="stat-value" style="color:#d97706;">{{ (daily_stats.delivered or 0) - (daily_stats.returned or 0) }}</div>
+      <div class="stat-label">Net Jars Out</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="stat-card text-center">
+      <div class="stat-value text-dark">{{ deliveries.total }}</div>
+      <div class="stat-label">Deliveries Made</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <span><i class="bi bi-truck me-2 text-brand"></i>
+    Deliveries — {{ selected_date.strftime('%A, %d %B %Y') }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Customer</th>
+          <th class="text-center">Delivered</th>
+          <th class="text-center">Returned</th>
+          <th class="text-center">Net</th>
+          <th>Staff</th>
+          <th>Remarks</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for d in deliveries.items %}
+        <tr>
+          <td>
+            <a href="{{ url_for('customers.view', id=d.customer.id) }}" class="text-decoration-none fw-600">
+              {{ d.customer.company_name }}</a>
+            <div style="font-size:11px;color:#94a3b8;">Pending: {{ d.customer.pending_jars }} jars</div>
+          </td>
+          <td class="text-center">
+            <span class="badge" style="background:#dbeafe;color:#1e40af;font-size:13px;padding:5px 10px;">
+              {{ d.jars_delivered }}</span>
+          </td>
+          <td class="text-center">
+            <span class="badge" style="background:#d1fae5;color:#065f46;font-size:13px;padding:5px 10px;">
+              {{ d.jars_returned }}</span>
+          </td>
+          <td class="text-center fw-700">{{ d.net_jars }}</td>
+          <td style="font-size:12px;">{{ d.delivery_staff or '—' }}</td>
+          <td style="font-size:12px;color:#64748b;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            {{ d.remarks or '' }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('deliveries.edit', id=d.id) }}" class="btn btn-icon btn-sm btn-outline-primary" title="Edit">
+                <i class="bi bi-pencil"></i></a>
+              <form method="POST" action="{{ url_for('deliveries.delete', id=d.id) }}" class="d-inline"
+                    onsubmit="return confirm('Delete this delivery entry?')">
+                <button type="submit" class="btn btn-icon btn-sm btn-outline-danger" title="Delete">
+                  <i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-5">
+          No deliveries for this date.
+          <a href="{{ url_for('deliveries.add') }}?date={{ selected_date }}">Add one now</a>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if deliveries.pages > 1 %}
+  <div class="card-body d-flex justify-content-center">
+    <nav><ul class="pagination mb-0">
+      {% for p in deliveries.iter_pages() %}
+        {% if p %}<li class="page-item {{ 'active' if p == deliveries.page }}">
+          <a class="page-link" href="?page={{ p }}&date={{ selected_date }}&customer_id={{ customer_id }}">{{ p }}</a>
+        </li>{% endif %}
+      {% endfor %}
+    </ul></nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function changeDate(days) {
+  const input = document.querySelector('input[name="date"]');
+  const d = new Date(input.value);
+  d.setDate(d.getDate() + days);
+  input.value = d.toISOString().slice(0,10);
+  document.getElementById('filterForm').submit();
+}
+function goToday() {
+  const input = document.querySelector('input[name="date"]');
+  input.value = new Date().toISOString().slice(0,10);
+  document.getElementById('filterForm').submit();
+}
+</script>
+{% endblock %}

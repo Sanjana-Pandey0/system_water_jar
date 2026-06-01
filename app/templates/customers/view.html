@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% block title %}{{ c.company_name }}{% endblock %}
+{% block page_title %}🏢 {{ c.company_name }}{% endblock %}
+{% block content %}
+<div class="row g-3 mb-3">
+  <!-- Info Card -->
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <span>Customer Info</span>
+        <a href="{{ url_for('customers.edit', id=c.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i> Edit</a>
+      </div>
+      <div class="card-body">
+        <div class="mb-3 d-flex align-items-center gap-2">
+          <span class="badge {{ 'bg-success' if c.is_active else 'bg-secondary' }}">{{ 'Active' if c.is_active else 'Inactive' }}</span>
+          <small class="text-muted">Since {{ c.created_at.strftime('%d %b %Y') }}</small>
+        </div>
+        <table class="table table-sm">
+          <tr><td class="text-muted small fw-semibold">Contact</td><td>{{ c.contact_person }}</td></tr>
+          <tr><td class="text-muted small fw-semibold">Mobile</td><td><a href="tel:{{ c.mobile }}">{{ c.mobile }}</a></td></tr>
+          {% if c.alt_mobile %}<tr><td class="text-muted small fw-semibold">Alt Mobile</td><td>{{ c.alt_mobile }}</td></tr>{% endif %}
+          {% if c.email %}<tr><td class="text-muted small fw-semibold">Email</td><td>{{ c.email }}</td></tr>{% endif %}
+          {% if c.address %}<tr><td class="text-muted small fw-semibold">Address</td><td>{{ c.address }}{% if c.city %}, {{ c.city }}{% endif %}{% if c.pin_code %} - {{ c.pin_code }}{% endif %}</td></tr>{% endif %}
+          {% if c.gst_number %}<tr><td class="text-muted small fw-semibold">GST</td><td>{{ c.gst_number }}</td></tr>{% endif %}
+          <tr><td class="text-muted small fw-semibold">Jar Rate</td><td><b>₹{{ c.jar_rate }}/jar</b></td></tr>
+          <tr><td class="text-muted small fw-semibold">Security Deposit</td><td>₹{{ c.security_deposit }}</td></tr>
+        </table>
+        {% if c.notes %}<div class="alert alert-light py-2 small mt-2"><b>Notes:</b> {{ c.notes }}</div>{% endif %}
+        <div class="d-flex gap-2 mt-3 flex-wrap">
+          <a href="{{ url_for('deliveries.add') }}?customer={{ c.id }}" class="btn btn-sm btn-primary"><i class="bi bi-truck me-1"></i>Add Delivery</a>
+          <a href="{{ url_for('customers.ledger', id=c.id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-journal me-1"></i>Ledger</a>
+          <form method="POST" action="{{ url_for('customers.toggle_status', id=c.id) }}" class="d-inline">
+            <button class="btn btn-sm btn-outline-{{ 'danger' if c.is_active else 'success' }}">
+              {{ 'Deactivate' if c.is_active else 'Activate' }}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Stats Cards -->
+  <div class="col-lg-8">
+    <div class="row g-3">
+      <div class="col-6 col-md-3">
+        <div class="kpi-card kpi-blue">
+          <div class="kpi-val">{{ total_delivered }}</div>
+          <div class="kpi-label">Total Delivered</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card kpi-green">
+          <div class="kpi-val">{{ total_returned }}</div>
+          <div class="kpi-label">Total Returned</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card {{ 'kpi-red' if jar_balance >= threshold else 'kpi-orange' }}">
+          <div class="kpi-val">{{ jar_balance }}</div>
+          <div class="kpi-label">Pending Jars</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card {{ 'kpi-red' if outstanding > 0 else 'kpi-teal' }}">
+          <div class="kpi-val">₹{{ "%.0f"|format(outstanding) }}</div>
+          <div class="kpi-label">Outstanding</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card kpi-teal">
+          <div class="kpi-val">₹{{ "%.0f"|format(total_invoiced) }}</div>
+          <div class="kpi-label">Total Invoiced</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="kpi-card kpi-purple">
+          <div class="kpi-val">₹{{ "%.0f"|format(total_paid) }}</div>
+          <div class="kpi-label">Total Paid</div>
+        </div>
+      </div>
+    </div>
+    <!-- Recent Deliveries -->
+    <div class="card mt-3">
+      <div class="card-header py-2 d-flex justify-content-between align-items-center">
+        <span>Recent Deliveries</span>
+        <a href="{{ url_for('deliveries.add') }}?customer={{ c.id }}" class="btn btn-sm btn-outline-primary py-0">+ Add</a>
+      </div>
+      <div class="card-body p-0">
+        {% if recent_deliveries %}
+        <table class="table table-clean mb-0">
+          <thead><tr><th>Date</th><th class="text-center">Delivered</th><th class="text-center">Returned</th><th class="text-center">Net</th><th>Staff</th></tr></thead>
+          <tbody>
+            {% for d in recent_deliveries[:8] %}
+            <tr>
+              <td class="small">{{ d.delivery_date.strftime('%d %b %Y') }}</td>
+              <td class="text-center"><span class="badge bg-primary bg-opacity-10 text-primary">{{ d.jars_delivered }}</span></td>
+              <td class="text-center"><span class="badge bg-success bg-opacity-10 text-success">{{ d.jars_returned }}</span></td>
+              <td class="text-center small fw-semibold">{{ d.net_jars }}</td>
+              <td class="small text-muted">{{ d.delivery_staff or '—' }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="p-3 text-center text-muted small">No deliveries recorded yet.</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Invoices -->
+<div class="card">
+  <div class="card-header py-3 d-flex justify-content-between align-items-center">
+    <span>🧾 Invoices</span>
+    <a href="{{ url_for('billing.generate') }}" class="btn btn-sm btn-outline-primary">Generate Invoice</a>
+  </div>
+  <div class="card-body p-0">
+    {% if invoices %}
+    <table class="table table-clean mb-0">
+      <thead><tr><th>Invoice No</th><th>Period</th><th class="text-center">Jars</th><th class="text-end">Total</th><th class="text-end">Paid</th><th class="text-end">Balance</th><th class="text-center">Status</th><th></th></tr></thead>
+      <tbody>
+        {% for inv in invoices %}
+        <tr>
+          <td><a href="{{ url_for('billing.view', id=inv.id) }}" class="text-decoration-none fw-semibold">{{ inv.invoice_number }}</a></td>
+          <td class="small text-muted">{{ inv.billing_month_name }} {{ inv.billing_year }}</td>
+          <td class="text-center">{{ inv.total_jars }}</td>
+          <td class="text-end">₹{{ "%.2f"|format(inv.grand_total) }}</td>
+          <td class="text-end text-success">₹{{ "%.2f"|format(inv.paid_amount) }}</td>
+          <td class="text-end {% if inv.balance_due > 0 %}text-danger fw-semibold{% endif %}">₹{{ "%.2f"|format(inv.balance_due) }}</td>
+          <td class="text-center"><span class="badge badge-{{ inv.status }}">{{ inv.status.title() }}</span></td>
+          <td>
+            <a href="{{ url_for('billing.pdf', id=inv.id) }}" target="_blank" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="bi bi-file-pdf"></i></a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="p-3 text-center text-muted small">No invoices yet.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

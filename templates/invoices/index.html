@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Invoices{% endblock %}
+{% block page_title %}Invoices{% endblock %}
+
+{% block content %}
+<!-- Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Total Invoiced</div>
+      <div class="stat-value" style="font-size:22px;">₹{{ "%.0f"|format(total_amount) }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div style="font-size:11px;color:#059669;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Total Collected</div>
+      <div class="stat-value" style="font-size:22px;color:#059669;">₹{{ "%.0f"|format(total_paid) }}</div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-card">
+      <div style="font-size:11px;color:#dc2626;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Outstanding</div>
+      <div class="stat-value" style="font-size:22px;color:#dc2626;">₹{{ "%.0f"|format(total_outstanding) }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Filters -->
+<div class="d-flex flex-wrap gap-2 align-items-center mb-4">
+  <form class="d-flex gap-2 flex-wrap flex-grow-1">
+    <div class="search-bar" style="min-width:200px;">
+      <i class="bi bi-search"></i>
+      <input type="text" name="search" class="form-control" placeholder="Invoice no. or customer…"
+             value="{{ search }}" style="padding-left:36px;">
+    </div>
+    <select name="status" class="form-select" style="width:auto;">
+      <option value="">All Status</option>
+      <option value="unpaid" {{ 'selected' if status=='unpaid' }}>Unpaid</option>
+      <option value="partial" {{ 'selected' if status=='partial' }}>Partial</option>
+      <option value="paid" {{ 'selected' if status=='paid' }}>Paid</option>
+    </select>
+    <select name="month" class="form-select" style="width:auto;">
+      <option value="">All Months</option>
+      {% for m in range(1,13) %}
+      <option value="{{ m }}" {{ 'selected' if month == m|string }}>
+        {{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m-1] }}
+      </option>
+      {% endfor %}
+    </select>
+    <select name="year" class="form-select" style="width:auto;">
+      <option value="">All Years</option>
+      {% for y in years %}
+      <option value="{{ y }}" {{ 'selected' if year == y|string }}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline-secondary">Filter</button>
+  </form>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('invoices.bulk_generate') }}" class="btn btn-outline-warning btn-sm">
+      <i class="bi bi-lightning me-1"></i>Bulk Generate
+    </a>
+    <a href="{{ url_for('invoices.generate') }}" class="btn btn-primary btn-sm">
+      <i class="bi bi-plus-lg me-1"></i>New Invoice
+    </a>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <span><i class="bi bi-receipt me-2 text-brand"></i>{{ invoices.total }} Invoice{{ 's' if invoices.total != 1 }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Invoice No.</th><th>Customer</th>
+          <th>Period</th><th class="text-center">Jars</th>
+          <th class="text-end">Amount</th><th class="text-end">Paid</th>
+          <th class="text-end">Balance</th><th class="text-center">Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in invoices.items %}
+        <tr>
+          <td><a href="{{ url_for('invoices.view', id=inv.id) }}" class="mono text-decoration-none text-brand" style="font-size:12px;font-weight:600;">{{ inv.invoice_number }}</a></td>
+          <td>
+            <a href="{{ url_for('customers.view', id=inv.customer.id) }}" class="text-decoration-none fw-600">
+              {{ inv.customer.company_name }}</a>
+          </td>
+          <td style="font-size:12px;">{{ ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][inv.billing_month-1] }} {{ inv.billing_year }}</td>
+          <td class="text-center">{{ inv.total_jars }}</td>
+          <td class="text-end fw-600">₹{{ "%.2f"|format(inv.total_amount) }}</td>
+          <td class="text-end text-success">₹{{ "%.2f"|format(inv.paid_amount) }}</td>
+          <td class="text-end {{ 'text-danger fw-700' if inv.balance_amount > 0 else 'text-success' }}">
+            ₹{{ "%.2f"|format(inv.balance_amount) }}</td>
+          <td class="text-center"><span class="badge-status badge-{{ inv.payment_status }}">{{ inv.payment_status }}</span></td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('invoices.view', id=inv.id) }}" class="btn btn-icon btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+              <a href="{{ url_for('invoices.download_pdf', id=inv.id) }}" class="btn btn-icon btn-sm btn-outline-danger"><i class="bi bi-filetype-pdf"></i></a>
+              {% if inv.payment_status != 'paid' %}
+              <a href="{{ url_for('payments.record') }}?invoice_id={{ inv.id }}" class="btn btn-icon btn-sm btn-outline-success"><i class="bi bi-cash"></i></a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-5">No invoices found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if invoices.pages > 1 %}
+  <div class="card-body d-flex justify-content-center">
+    <nav><ul class="pagination mb-0">
+      {% for p in invoices.iter_pages() %}
+        {% if p %}<li class="page-item {{ 'active' if p == invoices.page }}">
+          <a class="page-link" href="?page={{ p }}&status={{ status }}&month={{ month }}&year={{ year }}&search={{ search }}">{{ p }}</a>
+        </li>{% endif %}
+      {% endfor %}
+    </ul></nav>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

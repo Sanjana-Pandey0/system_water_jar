@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Monthly Summary{% endblock %}
+{% block page_title %}📅 Monthly Summary{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+  <form class="d-flex gap-2 align-items-center">
+    <select name="month" class="form-select form-select-sm" style="width:130px" onchange="this.form.submit()">
+      {% for m, mname in months %}<option value="{{ m }}" {{ 'selected' if m==month }}>{{ mname }}</option>{% endfor %}
+    </select>
+    <select name="year" class="form-select form-select-sm" style="width:90px" onchange="this.form.submit()">
+      {% for y in years %}<option value="{{ y }}" {{ 'selected' if y==year }}>{{ y }}</option>{% endfor %}
+    </select>
+  </form>
+  <a href="{{ url_for('billing.generate') }}?month={{ month }}&year={{ year }}" class="btn btn-sm btn-primary">
+    <i class="bi bi-file-earmark-plus me-1"></i>Generate Invoices
+  </a>
+</div>
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-blue"><div class="kpi-val">{{ data|length }}</div><div class="kpi-label">Active Customers</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-teal"><div class="kpi-val">{{ total_jars }}</div><div class="kpi-label">Total Jars Delivered</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-green"><div class="kpi-val">₹{{ "%.0f"|format(total_amount) }}</div><div class="kpi-label">Total Billed Value</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-purple"><div class="kpi-val">{{ data|selectattr('invoiced')|list|length }}</div><div class="kpi-label">Invoices Generated</div></div></div>
+</div>
+<div class="card">
+  <div class="card-header py-3">{{ month_name }} {{ year }} — Customer-wise Summary</div>
+  <div class="card-body p-0">
+    {% if data %}
+    <table class="table table-clean mb-0">
+      <thead><tr><th>#</th><th>Customer</th><th class="text-center">Jars</th><th class="text-end">Rate</th><th class="text-end">Amount</th><th class="text-center">Invoiced</th><th class="text-center">Status</th><th></th></tr></thead>
+      <tbody>
+        {% for d in data %}
+        <tr>
+          <td class="text-muted small">{{ loop.index }}</td>
+          <td><a href="{{ url_for('customers.view', id=d.customer.id) }}" class="text-decoration-none fw-semibold">{{ d.customer.company_name }}</a></td>
+          <td class="text-center fw-semibold">{{ d.jars }}</td>
+          <td class="text-end text-muted small">₹{{ d.customer.jar_rate }}</td>
+          <td class="text-end fw-semibold">₹{{ "%.2f"|format(d.amount) }}</td>
+          <td class="text-center">
+            {% if d.invoiced %}
+              <span class="badge bg-success"><i class="bi bi-check2"></i> Yes</span>
+            {% else %}
+              <span class="badge bg-secondary">No</span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            {% if d.invoice %}
+              <span class="badge badge-{{ d.invoice.status }}">{{ d.invoice.status.title() }}</span>
+            {% else %}
+              <span class="text-muted small">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if d.invoice %}
+              <a href="{{ url_for('billing.view', id=d.invoice.id) }}" class="btn btn-sm btn-outline-primary py-0 px-2"><i class="bi bi-eye"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+      <tfoot>
+        <tr style="background:#f8fafc; font-weight:700">
+          <td colspan="2" class="text-end text-muted">TOTAL</td>
+          <td class="text-center">{{ total_jars }}</td>
+          <td></td>
+          <td class="text-end">₹{{ "%.2f"|format(total_amount) }}</td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+    </table>
+    {% else %}
+    <div class="p-5 text-center text-muted">
+      <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+      No deliveries recorded for {{ month_name }} {{ year }}.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

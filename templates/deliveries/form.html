@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;">
+  <div class="d-flex justify-content-between mb-3">
+    <a href="{{ url_for('deliveries.index') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><i class="bi bi-truck me-2 text-brand"></i>Delivery Entry</div>
+    <div class="card-body">
+      <form method="POST" id="deliveryForm">
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">Date <span class="text-danger">*</span></label>
+            <input type="date" name="delivery_date" class="form-control" required
+                   value="{{ delivery.delivery_date.isoformat() if delivery else selected_date }}"
+                   max="{{ selected_date }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Customer <span class="text-danger">*</span></label>
+            <select name="customer_id" class="form-select" required id="customerSelect"
+                    onchange="loadCustomerStats()">
+              <option value="">Select customer…</option>
+              {% for c in customers %}
+              <option value="{{ c.id }}"
+                {{ 'selected' if (delivery and delivery.customer_id == c.id) or (request.args.get('customer_id') == c.id|string) }}
+                data-pending="{{ c.pending_jars }}">
+                {{ c.company_name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Customer Info Panel -->
+          <div class="col-12" id="customerInfoPanel" style="display:none;">
+            <div style="background:#f0f4ff;border:1px solid #c7d7f9;border-radius:10px;padding:12px 16px;font-size:13px;">
+              <span class="text-brand fw-700">Customer Status: </span>
+              <span id="pendingJarsInfo"></span>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Full Jars Delivered</label>
+            <input type="number" name="jars_delivered" class="form-control" min="0" value="{{ delivery.jars_delivered if delivery else 0 }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Empty Jars Returned</label>
+            <input type="number" name="jars_returned" class="form-control" min="0" value="{{ delivery.jars_returned if delivery else 0 }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Delivery Staff</label>
+            <input type="text" name="delivery_staff" class="form-control" placeholder="Staff name"
+                   value="{{ delivery.delivery_staff if delivery else '' }}"
+                   list="staffList">
+            <datalist id="staffList">
+              <option value="Raju">
+              <option value="Suresh">
+              <option value="Arun">
+            </datalist>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Remarks</label>
+            <input type="text" name="remarks" class="form-control" placeholder="Optional notes"
+                   value="{{ delivery.remarks if delivery else '' }}">
+          </div>
+        </div>
+
+        <div class="mt-4 d-flex gap-2 flex-wrap">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-check-lg me-1"></i>
+            {{ 'Update' if delivery else 'Save Delivery' }}
+          </button>
+          {% if not delivery %}
+          <button type="submit" name="add_another" value="1" class="btn btn-outline-primary">
+            <i class="bi bi-plus-lg me-1"></i>Save & Add Another
+          </button>
+          {% endif %}
+          <a href="{{ url_for('deliveries.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function loadCustomerStats() {
+  const sel = document.getElementById('customerSelect');
+  const option = sel.options[sel.selectedIndex];
+  const panel = document.getElementById('customerInfoPanel');
+  if (sel.value) {
+    const pending = option.getAttribute('data-pending');
+    document.getElementById('pendingJarsInfo').textContent = pending + ' jars currently pending with this customer';
+    panel.style.display = 'block';
+  } else {
+    panel.style.display = 'none';
+  }
+}
+// Initialize on load if editing
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('customerSelect').value) loadCustomerStats();
+});
+</script>
+{% endblock %}

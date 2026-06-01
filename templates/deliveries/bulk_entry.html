@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Bulk Delivery Entry{% endblock %}
+{% block page_title %}Bulk Delivery Entry{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+  <a href="{{ url_for('deliveries.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body py-3">
+    <form class="row g-3 align-items-end" id="headerForm">
+      <div class="col-md-3">
+        <label class="form-label">Delivery Date</label>
+        <input type="date" name="date" id="bulkDate" class="form-control"
+               value="{{ selected_date }}" onchange="this.form.submit()">
+      </div>
+    </form>
+  </div>
+</div>
+
+<form method="POST">
+  <input type="hidden" name="delivery_date" id="formDate" value="{{ selected_date }}">
+  <div class="card">
+    <div class="card-header">
+      <span><i class="bi bi-list-check me-2 text-brand"></i>
+        Enter Deliveries — {{ selected_date }}</span>
+      <div>
+        <input type="text" id="globalStaff" class="form-control form-control-sm d-inline-block" 
+               style="width:160px;" placeholder="Staff name (all)">
+        <button type="button" class="btn btn-sm btn-outline-secondary ms-2" onclick="applyStaff()">Apply to All</button>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table mb-0" id="bulkTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th style="min-width:200px;">Customer</th>
+            <th class="text-center" style="width:120px;">Delivered</th>
+            <th class="text-center" style="width:120px;">Returned</th>
+            <th style="width:150px;">Staff</th>
+            <th style="width:180px;">Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for i, c in enumerate(customers) %}
+          <tr>
+            <td style="font-size:12px;color:#94a3b8;">{{ i+1 }}</td>
+            <td>
+              <input type="hidden" name="customer_id[]" value="{{ c.id }}">
+              <div style="font-size:13px;font-weight:600;">{{ c.company_name }}</div>
+              <div style="font-size:11px;color:#94a3b8;">Pending: {{ c.pending_jars }} jars</div>
+            </td>
+            <td>
+              <input type="number" name="jars_delivered[]" class="form-control text-center"
+                     min="0" value="0" style="font-size:14px;font-weight:700;">
+            </td>
+            <td>
+              <input type="number" name="jars_returned[]" class="form-control text-center"
+                     min="0" value="0" style="font-size:14px;font-weight:700;">
+            </td>
+            <td>
+              <input type="text" name="delivery_staff[]" class="form-control staff-input" placeholder="Staff">
+            </td>
+            <td>
+              <input type="text" name="remarks[]" class="form-control" placeholder="Notes">
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div class="card-body">
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+        <button type="submit" name="delivery_staff" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>Save All Entries
+        </button>
+        <span class="text-muted" style="font-size:13px;">
+          Only rows with non-zero values will be saved.
+        </span>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Sync date between header form and hidden input
+document.getElementById('bulkDate').addEventListener('change', function() {
+  document.getElementById('formDate').value = this.value;
+});
+
+function applyStaff() {
+  const staff = document.getElementById('globalStaff').value;
+  document.querySelectorAll('.staff-input').forEach(el => el.value = staff);
+}
+
+// Highlight rows with data
+document.querySelectorAll('input[name="jars_delivered[]"], input[name="jars_returned[]"]').forEach(inp => {
+  inp.addEventListener('input', function() {
+    const row = this.closest('tr');
+    const d = parseInt(row.querySelector('[name="jars_delivered[]"]').value) || 0;
+    const r = parseInt(row.querySelector('[name="jars_returned[]"]').value) || 0;
+    row.style.background = (d > 0 || r > 0) ? '#f0fdf4' : '';
+  });
+});
+</script>
+{% endblock %}

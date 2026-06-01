@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Record Payment{% endblock %}
+{% block page_title %}💳 Record Payment{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-lg-6">
+<div class="card mb-3">
+  <div class="card-body py-2">
+    <div class="d-flex flex-wrap gap-3">
+      <div><small class="text-muted d-block">Invoice</small><b>{{ inv.invoice_number }}</b></div>
+      <div><small class="text-muted d-block">Customer</small><b>{{ inv.customer.company_name }}</b></div>
+      <div><small class="text-muted d-block">Period</small><b>{{ inv.billing_month_name }} {{ inv.billing_year }}</b></div>
+      <div><small class="text-muted d-block">Total</small><b>₹{{ "%.2f"|format(inv.grand_total) }}</b></div>
+      <div><small class="text-muted d-block">Balance Due</small><b class="text-danger">₹{{ "%.2f"|format(inv.balance_due) }}</b></div>
+    </div>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header py-3">Record Payment</div>
+  <div class="card-body">
+    <form method="POST">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Payment Date *</label>
+          <input type="date" name="payment_date" class="form-control" value="{{ today.isoformat() }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Amount (₹) *</label>
+          <input type="number" step="0.01" name="amount" class="form-control" required
+            value="{{ inv.balance_due }}" max="{{ inv.balance_due }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Payment Method</label>
+          <select name="method" class="form-select">
+            <option value="cash">💵 Cash</option>
+            <option value="upi">📱 UPI</option>
+            <option value="bank">🏦 Bank Transfer</option>
+            <option value="cheque">📑 Cheque</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Reference No. (optional)</label>
+          <input type="text" name="reference" class="form-control" placeholder="Txn ID / Cheque No.">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold small">Notes</label>
+          <input type="text" name="notes" class="form-control" placeholder="Any notes...">
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle me-1"></i>Save Payment</button>
+        <a href="{{ url_for('billing.view', id=inv.id) }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}

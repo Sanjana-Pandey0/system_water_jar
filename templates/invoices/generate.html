@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}Generate Invoice{% endblock %}
+{% block page_title %}Generate Invoice{% endblock %}
+
+{% block content %}
+<div style="max-width:600px;">
+  <a href="{{ url_for('invoices.index') }}" class="btn btn-outline-secondary btn-sm mb-3">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+  <div class="card">
+    <div class="card-header"><i class="bi bi-receipt me-2 text-brand"></i>New Invoice</div>
+    <div class="card-body">
+      <form method="POST">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Customer <span class="text-danger">*</span></label>
+            <select name="customer_id" class="form-select" required id="custSel" onchange="loadPreview()">
+              <option value="">Select customer…</option>
+              {% for c in customers %}
+              <option value="{{ c.id }}" data-rate="{{ c.jar_rate }}"
+                {{ 'selected' if request.args.get('customer_id') == c.id|string }}>
+                {{ c.company_name }} (₹{{ c.jar_rate }}/jar)
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Billing Month</label>
+            <select name="billing_month" class="form-select" id="billingMonth" onchange="loadPreview()">
+              {% for m in range(1,13) %}
+              <option value="{{ m }}" {{ 'selected' if m == current_month }}>
+                {{ ['January','February','March','April','May','June','July','August','September','October','November','December'][m-1] }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Billing Year</label>
+            <select name="billing_year" class="form-select" id="billingYear" onchange="loadPreview()">
+              {% for y in range(current_year, current_year-3, -1) %}
+              <option value="{{ y }}" {{ 'selected' if y == current_year }}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <!-- Preview Panel -->
+          <div class="col-12" id="previewPanel" style="display:none;">
+            <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:16px;">
+              <div style="font-size:12px;font-weight:700;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">
+                Preview</div>
+              <div class="row g-2 text-center">
+                <div class="col-3">
+                  <div style="font-size:22px;font-weight:800;color:#0369a1;" id="previewJars">—</div>
+                  <div style="font-size:11px;color:#64748b;">Total Jars</div>
+                </div>
+                <div class="col-3">
+                  <div style="font-size:22px;font-weight:800;color:#0369a1;" id="previewDays">—</div>
+                  <div style="font-size:11px;color:#64748b;">Delivery Days</div>
+                </div>
+                <div class="col-3">
+                  <div style="font-size:22px;font-weight:800;color:#0369a1;" id="previewRate">—</div>
+                  <div style="font-size:11px;color:#64748b;">Rate/Jar</div>
+                </div>
+                <div class="col-3">
+                  <div style="font-size:22px;font-weight:800;color:#059669;" id="previewAmount">—</div>
+                  <div style="font-size:11px;color:#64748b;">Amount</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">Rate per Jar (₹)</label>
+            <input type="number" name="rate_per_jar" class="form-control" id="rateInput"
+                   step="0.01" min="0" value="60">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">GST Percentage (%)</label>
+            <input type="number" name="gst_percentage" class="form-control"
+                   step="0.01" min="0" value="0" placeholder="0 = no GST">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control" rows="2" placeholder="Optional notes for invoice"></textarea>
+          </div>
+        </div>
+        <div class="mt-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-receipt me-1"></i>Generate Invoice
+          </button>
+          <a href="{{ url_for('invoices.index') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let debounceTimer;
+function loadPreview() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(_doLoadPreview, 300);
+}
+function _doLoadPreview() {
+  const cid = document.getElementById('custSel').value;
+  const month = document.getElementById('billingMonth').value;
+  const year = document.getElementById('billingYear').value;
+  if (!cid) { document.getElementById('previewPanel').style.display='none'; return; }
+
+  // Update rate from customer selection
+  const sel = document.getElementById('custSel');
+  const rate = sel.options[sel.selectedIndex].getAttribute('data-rate');
+  document.getElementById('rateInput').value = rate;
+
+  fetch(`/api/invoices/month-preview?customer_id=${cid}&month=${month}&year=${year}`)
+    .then(r => r.json()).then(data => {
+      document.getElementById('previewJars').textContent = data.total_jars;
+      document.getElementById('previewDays').textContent = data.delivery_days;
+      document.getElementById('previewRate').textContent = '₹' + data.rate;
+      document.getElementById('previewAmount').textContent = '₹' + data.amount.toLocaleString('en-IN');
+      document.getElementById('previewPanel').style.display = 'block';
+    }).catch(() => {});
+}
+document.addEventListener('DOMContentLoaded', () => {
+  if (document.getElementById('custSel').value) loadPreview();
+});
+</script>
+{% endblock %}

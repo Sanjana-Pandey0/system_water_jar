@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div style="max-width:800px;">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Back to Customers
+    </a>
+  </div>
+  <form method="POST">
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-building me-2 text-brand"></i>Company Information</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Company Name <span class="text-danger">*</span></label>
+            <input type="text" name="company_name" class="form-control" required
+                   value="{{ customer.company_name if customer else '' }}" placeholder="e.g. ABC Enterprises Pvt Ltd">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Contact Person</label>
+            <input type="text" name="contact_person" class="form-control"
+                   value="{{ customer.contact_person if customer else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Mobile <span class="text-danger">*</span></label>
+            <input type="tel" name="mobile" class="form-control" required
+                   value="{{ customer.mobile if customer else '' }}" placeholder="+91 98765 43210">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Alternate Mobile</label>
+            <input type="tel" name="alternate_mobile" class="form-control"
+                   value="{{ customer.alternate_mobile if customer else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control"
+                   value="{{ customer.email if customer else '' }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">Address</label>
+            <textarea name="address" class="form-control" rows="2">{{ customer.address if customer else '' }}</textarea>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">City</label>
+            <input type="text" name="city" class="form-control" value="{{ customer.city if customer else '' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">State</label>
+            <input type="text" name="state" class="form-control" value="{{ customer.state if customer else 'Maharashtra' }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">PIN Code</label>
+            <input type="text" name="pin_code" class="form-control" maxlength="6"
+                   value="{{ customer.pin_code if customer else '' }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">GST Number</label>
+            <input type="text" name="gst_number" class="form-control"
+                   value="{{ customer.gst_number if customer else '' }}" placeholder="27ABCDE1234F1Z5">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-currency-rupee me-2 text-brand"></i>Billing Settings</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Jar Rate (₹ per jar) <span class="text-danger">*</span></label>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <input type="number" name="jar_rate" class="form-control" step="0.01" min="0" required
+                     value="{{ customer.jar_rate if customer else 60 }}">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Security Deposit (₹)</label>
+            <div class="input-group">
+              <span class="input-group-text">₹</span>
+              <input type="number" name="security_deposit" class="form-control" step="0.01" min="0"
+                     value="{{ customer.security_deposit if customer else 0 }}">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Opening Jar Balance</label>
+            <input type="number" name="opening_jar_balance" class="form-control" min="0"
+                   value="{{ customer.opening_jar_balance if customer else 0 }}">
+            <div class="form-text">Jars already with customer before system start</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-sticky me-2 text-brand"></i>Additional Info</div>
+      <div class="card-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Notes</label>
+            <textarea name="notes" class="form-control" rows="3"
+                      placeholder="Any special notes about this customer...">{{ customer.notes if customer else '' }}</textarea>
+          </div>
+          {% if customer %}
+          <div class="col-md-4">
+            <label class="form-label">Status</label>
+            <div class="form-check form-switch mt-1">
+              <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+                     {{ 'checked' if customer.is_active }}>
+              <label class="form-check-label" for="isActive">Active Customer</label>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex gap-2">
+      <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg me-1"></i>
+        {{ 'Update Customer' if customer else 'Add Customer' }}
+      </button>
+      <a href="{{ url_for('customers.index') }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

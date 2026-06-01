@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Edit Invoice{% endblock %}
+{% block page_title %}✏️ Edit Invoice{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-lg-6">
+<div class="card">
+  <div class="card-header py-3">Edit Invoice {{ inv.invoice_number }}</div>
+  <div class="card-body">
+    <form method="POST">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Total Jars</label>
+          <input type="number" name="total_jars" class="form-control" value="{{ inv.total_jars }}" id="totalJars" oninput="recalc()">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Rate per Jar (₹)</label>
+          <input type="number" step="0.5" name="rate_per_jar" class="form-control" value="{{ inv.rate_per_jar }}" id="rateJar" oninput="recalc()">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">GST %</label>
+          <input type="number" step="0.01" name="gst_percent" class="form-control" value="{{ inv.gst_percent }}" id="gstPct" oninput="recalc()">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold small">Calculated Total</label>
+          <input type="text" class="form-control bg-light" readonly id="calcTotal">
+        </div>
+        <div class="col-12">
+          <label class="form-label fw-semibold small">Notes</label>
+          <textarea name="notes" class="form-control" rows="2">{{ inv.notes or '' }}</textarea>
+        </div>
+      </div>
+      <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+        <a href="{{ url_for('billing.view', id=inv.id) }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+</div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function recalc() {
+  const j = parseFloat(document.getElementById('totalJars').value) || 0;
+  const r = parseFloat(document.getElementById('rateJar').value) || 0;
+  const g = parseFloat(document.getElementById('gstPct').value) || 0;
+  const sub = j * r;
+  const gst = sub * g / 100;
+  document.getElementById('calcTotal').value = '₹ ' + (sub + gst).toFixed(2);
+}
+recalc();
+</script>
+{% endblock %}

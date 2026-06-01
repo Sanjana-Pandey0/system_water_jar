@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}AquaFlow{% endblock %} — Water Jar Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-dark: #1342a8;
+      --sidebar-bg: #0f172a;
+      --sidebar-hover: #1e293b;
+      --accent: #0e9f6e;
+      --warning-color: #d97706;
+      --danger-color: #e02424;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f1f5f9; color: #1e293b; margin: 0; }
+    /* ── Sidebar ── */
+    #sidebar {
+      position: fixed; top: 0; left: 0; height: 100vh; width: 250px;
+      background: var(--sidebar-bg); color: #e2e8f0; z-index: 1000;
+      display: flex; flex-direction: column; transition: transform 0.3s;
+      overflow-y: auto;
+    }
+    #sidebar .brand {
+      padding: 20px 20px 12px;
+      border-bottom: 1px solid #1e293b;
+    }
+    #sidebar .brand-name { font-size: 1.1rem; font-weight: 700; color: #fff; letter-spacing: 0.3px; }
+    #sidebar .brand-sub { font-size: 0.72rem; color: #64748b; letter-spacing: 1px; text-transform: uppercase; }
+    #sidebar nav { padding: 12px 0; flex: 1; }
+    #sidebar nav .nav-section { padding: 10px 20px 4px; font-size: 0.65rem; letter-spacing: 1.5px; text-transform: uppercase; color: #475569; }
+    #sidebar nav a {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 20px; color: #94a3b8; text-decoration: none;
+      font-size: 0.875rem; transition: all 0.2s; border-left: 3px solid transparent;
+    }
+    #sidebar nav a:hover, #sidebar nav a.active {
+      background: var(--sidebar-hover); color: #fff; border-left-color: var(--primary);
+    }
+    #sidebar nav a i { width: 18px; text-align: center; font-size: 1rem; }
+    #sidebar .sidebar-footer { padding: 16px 20px; border-top: 1px solid #1e293b; font-size: 0.8rem; color: #64748b; }
+    /* ── Main ── */
+    #main { margin-left: 250px; min-height: 100vh; }
+    #topbar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 0 24px; height: 60px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 900;
+      box-shadow: 0 1px 3px rgba(0,0,0,.06);
+    }
+    #topbar .page-title { font-size: 1rem; font-weight: 600; color: #1e293b; }
+    #content { padding: 24px; }
+    /* ── Cards ── */
+    .card { border: none; border-radius: 12px; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+    .card-header { background: transparent; border-bottom: 1px solid #f1f5f9; font-weight: 600; }
+    /* ── KPI Cards ── */
+    .kpi-card { border-radius: 12px; padding: 20px 22px; color: #fff; position: relative; overflow: hidden; }
+    .kpi-card .kpi-val { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .kpi-card .kpi-label { font-size: 0.8rem; opacity: 0.85; margin-top: 4px; }
+    .kpi-card .kpi-icon { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); font-size: 2.5rem; opacity: 0.2; }
+    .kpi-blue { background: linear-gradient(135deg, #1a56db, #1342a8); }
+    .kpi-green { background: linear-gradient(135deg, #0e9f6e, #057a55); }
+    .kpi-orange { background: linear-gradient(135deg, #d97706, #b45309); }
+    .kpi-red { background: linear-gradient(135deg, #e02424, #c81e1e); }
+    .kpi-teal { background: linear-gradient(135deg, #0891b2, #0e7490); }
+    .kpi-purple { background: linear-gradient(135deg, #7c3aed, #6d28d9); }
+    /* ── Badges ── */
+    .badge-paid { background: #d1fae5; color: #065f46; }
+    .badge-unpaid { background: #fee2e2; color: #991b1b; }
+    .badge-partial { background: #fef3c7; color: #92400e; }
+    /* ── Tables ── */
+    .table-clean { border-collapse: separate; border-spacing: 0; }
+    .table-clean th { background: #f8fafc; font-size: 0.78rem; text-transform: uppercase; letter-spacing: .5px; color: #64748b; font-weight: 600; border-bottom: 2px solid #e2e8f0; padding: 10px 14px; }
+    .table-clean td { padding: 10px 14px; vertical-align: middle; border-bottom: 1px solid #f1f5f9; font-size: 0.875rem; }
+    .table-clean tr:last-child td { border-bottom: none; }
+    /* ── Alerts ── */
+    .alert { border: none; border-radius: 10px; }
+    /* ── Buttons ── */
+    .btn-primary { background: var(--primary); border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+    /* ── Warning row ── */
+    .row-warning td { background: #fff7ed !important; }
+    /* ── Mobile sidebar toggle ── */
+    #sidebar-toggle { display: none; }
+    @media (max-width: 768px) {
+      #sidebar { transform: translateX(-250px); }
+      #sidebar.open { transform: translateX(0); }
+      #main { margin-left: 0; }
+      #sidebar-toggle { display: flex; }
+      #content { padding: 16px; }
+    }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; }
+    .sidebar-overlay.active { display: block; }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+<!-- Sidebar -->
+<div id="sidebar">
+  <div class="brand">
+    <div class="d-flex align-items-center gap-2">
+      <span style="font-size:1.6rem;">💧</span>
+      <div>
+        <div class="brand-name">AquaFlow</div>
+        <div class="brand-sub">Water Supply Mgmt</div>
+      </div>
+    </div>
+  </div>
+  <nav>
+    <a href="{{ url_for('dashboard.index') }}" class="{{ 'active' if request.endpoint == 'dashboard.index' }}">
+      <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+    <div class="nav-section">Operations</div>
+    <a href="{{ url_for('deliveries.index') }}" class="{{ 'active' if request.blueprint == 'deliveries' }}">
+      <i class="bi bi-truck"></i> Deliveries
+    </a>
+    <a href="{{ url_for('deliveries.bulk') }}" class="{{ 'active' if request.endpoint == 'deliveries.bulk' }}">
+      <i class="bi bi-grid-3x3-gap"></i> Bulk Entry
+    </a>
+    <div class="nav-section">Business</div>
+    <a href="{{ url_for('customers.index') }}" class="{{ 'active' if request.blueprint == 'customers' }}">
+      <i class="bi bi-people"></i> Customers
+    </a>
+    <a href="{{ url_for('billing.index') }}" class="{{ 'active' if request.blueprint == 'billing' }}">
+      <i class="bi bi-receipt"></i> Invoices
+    </a>
+    <a href="{{ url_for('billing.generate') }}" class="{{ 'active' if request.endpoint == 'billing.generate' }}">
+      <i class="bi bi-file-earmark-plus"></i> Generate Bills
+    </a>
+    <a href="{{ url_for('payments.index') }}" class="{{ 'active' if request.blueprint == 'payments' }}">
+      <i class="bi bi-cash-coin"></i> Payments
+    </a>
+    <div class="nav-section">Reports</div>
+    <a href="{{ url_for('reports.jar_status') }}" class="{{ 'active' if request.endpoint == 'reports.jar_status' }}">
+      <i class="bi bi-droplet-half"></i> Jar Status
+    </a>
+    <a href="{{ url_for('reports.outstanding') }}" class="{{ 'active' if request.endpoint == 'reports.outstanding' }}">
+      <i class="bi bi-exclamation-circle"></i> Outstanding
+    </a>
+    <a href="{{ url_for('reports.monthly_summary') }}" class="{{ 'active' if request.endpoint == 'reports.monthly_summary' }}">
+      <i class="bi bi-calendar-month"></i> Monthly Summary
+    </a>
+    <a href="{{ url_for('reports.collections') }}" class="{{ 'active' if request.endpoint == 'reports.collections' }}">
+      <i class="bi bi-bar-chart"></i> Collections
+    </a>
+    <div class="nav-section">System</div>
+    <a href="{{ url_for('settings.index') }}" class="{{ 'active' if request.blueprint == 'settings' }}">
+      <i class="bi bi-gear"></i> Settings
+    </a>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="d-flex align-items-center gap-2">
+      <i class="bi bi-person-circle"></i>
+      <div>
+        <div style="color:#e2e8f0; font-weight:600;">{{ current_user.username }}</div>
+        <div style="font-size:0.7rem;">{{ current_user.role }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- Main -->
+<div id="main">
+  <div id="topbar">
+    <div class="d-flex align-items-center gap-3">
+      <button class="btn btn-sm btn-light" id="sidebar-toggle"><i class="bi bi-list fs-5"></i></button>
+      <span class="page-title">{% block page_title %}{% endblock %}</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="d-none d-md-block text-muted small">{{ now.strftime('%d %b %Y') if now else '' }}</span>
+      <a href="{{ url_for('auth.logout') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-box-arrow-right"></i> <span class="d-none d-sm-inline">Logout</span>
+      </a>
+    </div>
+  </div>
+  <div id="content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ 'danger' if cat == 'error' else cat }} alert-dismissible fade show" role="alert">
+          {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const toggle = document.getElementById('sidebar-toggle');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  toggle?.addEventListener('click', () => { sidebar.classList.toggle('open'); overlay.classList.toggle('active'); });
+  overlay.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('active'); });
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

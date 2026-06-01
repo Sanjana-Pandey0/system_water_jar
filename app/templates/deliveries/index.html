@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Deliveries{% endblock %}
+{% block page_title %}🚚 Deliveries{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3">
+  <form class="d-flex align-items-center gap-2">
+    <label class="text-muted small fw-semibold mb-0">Date:</label>
+    <input type="date" name="date" value="{{ selected_date.isoformat() }}" class="form-control form-control-sm" style="width:160px" onchange="this.form.submit()">
+    <a href="?date={{ (selected_date - timedelta(days=1)).isoformat() }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-chevron-left"></i></a>
+    <a href="?date={{ (selected_date + timedelta(days=1)).isoformat() }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-chevron-right"></i></a>
+    <a href="?date={{ today.isoformat() }}" class="btn btn-sm btn-outline-primary">Today</a>
+  </form>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('deliveries.add') }}?date={{ selected_date.isoformat() }}" class="btn btn-sm btn-success"><i class="bi bi-plus-circle me-1"></i>Add Entry</a>
+    <a href="{{ url_for('deliveries.bulk') }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-grid me-1"></i>Bulk Entry</a>
+    <a href="{{ url_for('deliveries.export_csv') }}?from={{ selected_date.isoformat() }}&to={{ selected_date.isoformat() }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-download me-1"></i>CSV</a>
+  </div>
+</div>
+
+{% if deliveries %}
+<div class="row g-2 mb-3">
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-blue"><div class="kpi-val">{{ deliveries|length }}</div><div class="kpi-label">Customers Served</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-teal"><div class="kpi-val">{{ total_out }}</div><div class="kpi-label">Jars Delivered</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-green"><div class="kpi-val">{{ total_in }}</div><div class="kpi-label">Jars Returned</div></div></div>
+  <div class="col-6 col-md-3"><div class="kpi-card kpi-orange"><div class="kpi-val">{{ total_out - total_in }}</div><div class="kpi-label">Net Out</div></div></div>
+</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body p-0">
+    {% if deliveries %}
+    <table class="table table-clean mb-0">
+      <thead><tr><th>#</th><th>Customer</th><th class="text-center">Delivered</th><th class="text-center">Returned</th><th class="text-center">Net</th><th>Staff</th><th>Remarks</th><th></th></tr></thead>
+      <tbody>
+        {% for d in deliveries %}
+        <tr>
+          <td class="text-muted small">{{ loop.index }}</td>
+          <td><a href="{{ url_for('customers.view', id=d.customer_id) }}" class="text-decoration-none fw-semibold">{{ d.customer.company_name }}</a></td>
+          <td class="text-center"><span class="badge bg-primary bg-opacity-10 text-primary fs-6">{{ d.jars_delivered }}</span></td>
+          <td class="text-center"><span class="badge bg-success bg-opacity-10 text-success fs-6">{{ d.jars_returned }}</span></td>
+          <td class="text-center fw-semibold">{{ d.net_jars }}</td>
+          <td class="text-muted small">{{ d.delivery_staff or '—' }}</td>
+          <td class="text-muted small">{{ d.remarks or '—' }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{{ url_for('deliveries.edit', id=d.id) }}" class="btn btn-sm btn-outline-secondary py-0 px-2"><i class="bi bi-pencil"></i></a>
+              <form method="POST" action="{{ url_for('deliveries.delete', id=d.id) }}" onsubmit="return confirm('Delete this entry?')">
+                <button class="btn btn-sm btn-outline-danger py-0 px-2"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="p-5 text-center text-muted">
+      <i class="bi bi-truck fs-1 d-block mb-2 text-muted"></i>
+      No deliveries for {{ selected_date.strftime('%d %B %Y') }}.<br>
+      <a href="{{ url_for('deliveries.add') }}?date={{ selected_date.isoformat() }}" class="btn btn-sm btn-primary mt-2">Add First Delivery</a>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+const today = "{{ today.isoformat() }}";
+// Make date nav work
+</script>
+{% endblock %}

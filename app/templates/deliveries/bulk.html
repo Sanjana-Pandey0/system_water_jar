@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Bulk Entry{% endblock %}
+{% block page_title %}📋 Bulk Delivery Entry{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header py-3 d-flex align-items-center justify-content-between">
+    <span>Enter today's deliveries for all customers at once</span>
+    <a href="{{ url_for('deliveries.index') }}" class="btn btn-sm btn-outline-secondary">Back</a>
+  </div>
+  <div class="card-body">
+    <form method="POST">
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small">Date *</label>
+          <input type="date" name="delivery_date" class="form-control" value="{{ today.isoformat() }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small">Delivery Staff (applies to all)</label>
+          <input type="text" name="delivery_staff" class="form-control" placeholder="Staff name">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold small">Quick Fill</label>
+          <div class="d-flex gap-2">
+            <input type="number" id="quickFill" class="form-control form-control-sm" placeholder="Qty">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="quickFillAll()">Fill All</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="clearAll()">Clear</button>
+          </div>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-clean">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th class="text-center" style="width:140px">Jars Delivered</th>
+              <th class="text-center" style="width:140px">Jars Returned</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in customers %}
+            {% set ex = existing.get(c.id) %}
+            <tr>
+              <td class="text-muted small">{{ loop.index }}</td>
+              <td>
+                <b>{{ c.company_name }}</b>
+                <small class="text-muted d-block">{{ c.contact_person }} | ₹{{ c.jar_rate }}/jar</small>
+              </td>
+              <td class="text-center">
+                <input type="number" name="delivered_{{ c.id }}" class="form-control form-control-sm text-center delivered-input" min="0" value="{{ ex.jars_delivered if ex else 0 }}" style="width:90px; margin:auto">
+              </td>
+              <td class="text-center">
+                <input type="number" name="returned_{{ c.id }}" class="form-control form-control-sm text-center" min="0" value="{{ ex.jars_returned if ex else 0 }}" style="width:90px; margin:auto">
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary btn-lg"><i class="bi bi-save me-1"></i>Save All Deliveries</button>
+        <a href="{{ url_for('deliveries.index') }}" class="btn btn-outline-secondary btn-lg">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_scripts %}
+<script>
+function quickFillAll() {
+  const qty = document.getElementById('quickFill').value;
+  document.querySelectorAll('.delivered-input').forEach(i => i.value = qty);
+}
+function clearAll() {
+  document.querySelectorAll('input[type=number]').forEach(i => i.value = 0);
+}
+</script>
+{% endblock %}
